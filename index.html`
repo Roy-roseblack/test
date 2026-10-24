@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Player Stats | Elite Dashboard</title>
+    <style>
+        :root {
+            --primary: #fbbf24;
+            --bg: #000000;
+            --card-bg: #111111;
+            --text: #ffffff;
+            --text-muted: #a1a1aa;
+            --accent: #22c55e;
+            --border: #27272a;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-corner {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(17, 17, 17, 0.8);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: black;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .profile-id {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+        .profile-clan {
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: opacity 0.2s;
+        }
+        .profile-clan:hover {
+            opacity: 0.7;
+        }
+        .dashboard {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 2rem;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 2px var(--border);
+            width: 100%;
+            max-width: 550px;
+            border: 1px solid var(--border);
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        .dashboard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .player-name {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to bottom, #fff 40%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .clan-badge {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--primary);
+            padding: 0.3rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-top: 0.75rem;
+            border: 1px solid var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .clan-badge:hover {
+            background: var(--primary);
+            color: black;
+            transform: scale(1.05);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        .stat-card {
+            background: #18181b;
+            padding: 1.5rem;
+            border-radius: 1.2rem;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            border-color: var(--primary);
+            background: #212121;
+            transform: translateY(-3px);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .total-points {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #18181b 0%, #000 100%);
+            border: 2px solid var(--primary);
+        }
+        .total-points .stat-value {
+            font-size: 3.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+        .improvement-tag {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .improvement-tag::before {
+            content: '↑';
+            font-weight: 900;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes modalFadeIn {
+            from { opacity: 0; backdrop-filter: blur(0px); }
+            to { opacity: 1; backdrop-filter: blur(10px); }
+        }
+        @keyframes modalPopUp {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes modalFadeOut {
+            from { opacity: 1; backdrop-filter: blur(10px); }
+            to { opacity: 0; backdrop-filter: blur(0px); }
+        }
+        @keyframes modalShrink {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(0.8); opacity: 0; }
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show {
+            display: flex;
+            animation: modalFadeIn 0.3s ease forwards;
+        }
+        .modal-overlay.hide {
+            display: flex;
+            animation: modalFadeOut 0.3s ease forwards;
+        }
+        .modal {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            position: relative;
+        }
+        .modal.show {
+            animation: modalPopUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .modal.hide {
+            animation: modalShrink 0.3s ease forwards;
+        }
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-btn:hover {
+            color: var(--primary);
+        }
+        .modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .modal-header h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin: 0;
+        }
+        .clan-growth {
+            text-align: center;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+        .member-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #18181b;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            opacity: 0;
+            animation: slideIn 0.4s ease forwards;
+        }
+        .member-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .member-name {
+            font-weight: 700;
+            color: var(--text);
+        }
+        .member-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .role-leader {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            border: 1px solid var(--primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-corner">
+        <div class="profile-avatar" id="avatarInitial">D</div>
+        <div class="profile-info">
+            <div class="profile-name" id="profName">Loading...</div>
+            <div class="profile-id" id="profId">ID: #00000000</div>
+            <div class="profile-clan" id="profClan" onclick="openClanModal()">Loading Clan...</div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="header">
+            <h1 class="player-name" id="playerName">Loading Player...</h1>
+            <div class="clan-badge" id="playerClan" onclick="openClanModal()">Loading Clan...</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card total-points">
+                <div class="stat-label">Total Points</div>
+                <div class="stat-value" id="totalPoints">0</div>
+                <div class="improvement-tag" id="totalImprovement">+0% this month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Current</div>
+                <div class="stat-value" id="currentPoints">0</div>
+                <div class="improvement-tag" id="currentImprovement">+0%</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Saved</div>
+                <div class="stat-value" id="savedPoints">0</div>
+                <div class="improvement-tag" id="savedImprovement">+0%</div>
+            </div>
+
+            <div class="stat-card" style="grid-column: span 2;">
+                <div class="stat-label">Review Memorization</div>
+                <div class="stat-value" id="reviewMem">0%</div>
+                <div class="improvement-tag" id="memImprovement">+0% from last week</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="clanModal">
+        <div class="modal" id="clanModalContent">
+            <button class="close-btn" onclick="closeClanModal()">×</button>
+            <div class="modal-header">
+                <h2 id="modalClanName">Clan Name</h2>
+            </div>
+            <div class="clan-growth" id="clanImprovement">+0% Clan Growth This Month</div>
+            <div class="member-list" id="memberList"></div>
+        </div>
+    </div>
+
+    <script>
+        const playerData = {
+            name: "Dean Winchester",
+            id: "774-DW-992",
+            clan: "The Winchesters",
+            totalPoints: 25450,
+            currentPoints: 4300,
+            savedPoints: 21150,
+            reviewMemorization: "94%",
+            improvements: {
+                total: "12%",
+                current: "5%",
+                saved: "20%",
+                mem: "6%"
+            }
+        };
+
+        const clanData = {
+            name: "The Winchesters",
+            monthlyImprovement: "18%",
+            members: [
+                { name: "Sam Winchester", role: "Leader", points: 32000 },
+                { name: "Dean Winchester", role: "Elite", points: 25450 },
+                { name: "Castiel", role: "Guardian", points: 18000 },
+                { name: "Bobby Singer", role: "Mentor", points: 12000 },
+                { name: "Crowley", role: "Mercenary", points: 9000 }
+            ]
+        };
+
+        function loadStats() {
+            document.getElementById('profName').textContent = playerData.name;
+            document.getElementById('profId').textContent = `ID: #${playerData.id}`;
+            document.getElementById('profClan').textContent = playerData.clan;
+            document.getElementById('avatarInitial').textContent = playerData.name.charAt(0);
+            document.getElementById('playerName').textContent = playerData.name;
+            document.getElementById('playerClan').textContent = playerData.clan;
+            document.getElementById('totalPoints').textContent = playerData.totalPoints.toLocaleString();
+            document.getElementById('currentPoints').textContent = playerData.currentPoints.toLocaleString();
+            document.getElementById,getElementById('savedPoints').textContent = playerData.savedPoints.toLocaleString();
+            document.getElementById('reviewMem').textContent = playerData.reviewMemorization;
+            document.getElementById('totalImprovement').textContent = `+${playerData.improvements.total} this month`;
+            document.getElementById('currentImprovement').textContent = `+${playerData.improvements.current}`;
+            document.getElementById('savedImprovement').textContent = `+${playerData.improvements.saved}`;
+            document.getElementById('memImprovement').textContent = `+${playerData.improvements.mem} from last week`;
+        }
+
+        function openClanModal() {
+            const overlay = document.getElementById('clanModal');
+            const content = document.getElementById('clanModalContent');
+
+            overlay.style.display = 'flex';
+
+            setTimeout(() => {
+                overlay.classList.remove('hide');
+                overlay.classList.add('show');
+                content.classList.remove('hide');
+                content.classList.add('show');
+            }, 10);
+
+            document.getElementById('modalClanName').textContent = clanData.name;
+            document.getElementById('clanImprovement').textContent = `+${clanData.monthlyImprovement} Clan Growth This Month`;
+
+            const list = document.getElementById('memberList');
+            list.innerHTML = "";
+            clanData.members.forEach((member, index) => {
+                const item = document.createElement('div');
+                item.className = 'member-item';
+                item.style.animationDelay = `${index * 0.1}s`;
+                item.innerHTML = `
+                    <div class="member-info">
+                        <div class="member-name">${member.name}</div>
+                        <div class="member-role">${member.role === 'Leader' ?
+                            `<span class="role-leader">Leader</span>` : member.role}</div>
+                    </div>
+                    <div class="stat-value" style="font-size: 1.1rem;">${member.points.toLocaleString()}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function closeClanModal() {
+            const overlay = document.getElementById('clanModal');
+            const content = document.getElementById('clanModalContent');
+
+            overlay.classList.remove('show');
+            overlay.classList.add('hide');
+            content.classList.remove('show');
+            content.classList.add('hide');
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.classList.remove('hide');
+                content.classList.remove('hide');
+            }, 300);
+        }
+
+        window.onload = () => {
+            loadStats();
+            document.getElementById('clanModal').style.display = 'none';
+        };
+    </script>
+</body>
+</html>
